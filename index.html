@@ -1,0 +1,35 @@
+h.innerHTML += `
+                    <div class="item">
+                        <img src="images/${it.img}" onerror="this.src='https://via.placeholder.com/50/00f2ff/000000?text=IMG'">
+                        <div class="item-info">
+                            <b>${it.name} [${it.lvl}]</b>
+                            <small>+${it.power} ${it.type=='click'?'клик':'/сек'}</small>
+                        </div>
+                        <button class="buy-btn" onclick="buy(${it.id})" ${data.bal < it.cost ? 'disabled' : ''}>
+                            ${it.cost}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('bal').innerText = Math.floor(data.bal).toLocaleString();
+            document.getElementById('v-ipc').innerText = data.ipc;
+            document.getElementById('v-ips').innerText = data.ips;
+        }
+
+        function loop() {
+            setInterval(() => {
+                if(data.ips > 0) {
+                    data.bal += data.ips / 10;
+                    updateUI();
+                }
+            }, 100);
+            setInterval(save, 3000);
+        }
+
+        load();
+    </script>
+</body>
+</html>
