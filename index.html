@@ -3,86 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHLUHIKOIN PRO</title>
+    <title>SHLUHIKOIN OFFICIAL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --accent: #00f2ff; --bg: #0a0b10; --card: #1c1e29; }
-        body { background: radial-gradient(circle at top, #1a1c2c 0%, #0a0b10 100%); color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
-        #selection-screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; }
-        .opt { width: 120px; height: 120px; background: var(--card); border: 2px solid #333; border-radius: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        :root { --accent: #00f2ff; --bg: #0a0b10; --card: #1c1e29; --gold: #ffcc00; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(circle at top, #1a1c2c 0%, #0a0b10 100%); color: white; font-family: 'Arial', sans-serif; margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+
+        /* Экран выбора */
+        #select-screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; visibility: visible; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+        .opt { width: 130px; height: 130px; background: var(--card); border: 2px solid #333; border-radius: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
         .opt img { width: 80%; height: 80%; object-fit: contain; }
-        #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; }
-        .balance { font-size: 50px; font-weight: 900; margin-top: 50px; text-shadow: 0 0 20px var(--accent); }
-        .coin-wrap { margin: 40px 0; width: 250px; height: 250px; position: relative; }
-        #main-coin { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(145deg, #ffd700, #b8860b); border: 8px solid #fff3bf; box-shadow: 0 10px 0 #856b00; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; }
-        #main-coin:active { transform: translateY(5px); box-shadow: 0 5px 0 #856b00; }
-        #main-coin img { width: 70%; height: 70%; pointer-events: none; }
-        .shop-btn { position: fixed; bottom: 30px; width: 80%; background: var(--accent); color: #000; padding: 15px; border-radius: 20px; font-weight: bold; text-align: center; }
-        #shop-modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 70%; background: #111; border-top: 2px solid var(--accent); border-radius: 30px 30px 0 0; transition: 0.3s; padding: 20px; box-sizing: border-box; z-index: 2000; }
-        #shop-modal.active { bottom: 0; }
-        .item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .opt:active { transform: scale(0.9); border-color: var(--accent); }
+
+        /* Игровой экран */
+        #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; height: 100%; }
+
+        /* Счетчик */
+        .stats { margin-top: 50px; text-align: center; }
+        #balance { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px rgba(0,242,255,0.4); }
+        .ips-text { color: var(--accent); font-weight: bold; margin-top: 5px; }
+
+        /* Монета */
+        .coin-box { position: relative; margin: 40px 0; width: 260px; height: 260px; }
+        #coin { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(145deg, #ffd700, #b8860b); border: 8px solid #fff3bf; box-shadow: 0 12px 0 #856b00, 0 20px 40px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.05s; }
+        #coin:active { transform: translateY(8px); box-shadow: 0 4px 0 #856b00; }
+        #coin img { width: 75%; height: 75%; pointer-events: none; }
+
+        /* Энергия */
+        .energy-wrap { width: 80%; margin-top: 20px; }
+        .bar { height: 10px; background: #222; border-radius: 10px; overflow: hidden; margin-top: 5px; }
+        #fill { height: 100%; background: var(--gold); width: 100%; transition: width 0.2s; }
+
+        /* Магазин */
+        .shop-btn { position: fixed; bottom: 30px; width: 85%; background: var(--accent); color: #000; padding: 20px; border-radius: 20px; font-weight: 900; text-align: center; font-size: 18px; box-shadow: 0 10px 20px rgba(0,242,255,0.3); }
+        #shop-ui { position: fixed; bottom: -100%; left: 0; width: 100%; height: 75%; background: #111; border-top: 3px solid var(--accent); border-radius: 30px 30px 0 0; transition: 0.4s; padding: 25px; z-index: 2000; }
+        #shop-ui.open { bottom: 0; }
+        .card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
+        .card-left { display: flex; align-items: center; gap: 15px; }
+        .sticker { font-size: 35px; }
+        .buy-btn { background: white; color: black; border: none; padding: 10px 15px; border-radius: 12px; font-weight: bold; }
+        .buy-btn:disabled { background: #444; color: #888; }
+
+        /* Анимация клика */
+        .plus { position: absolute; font-size: 35px; font-weight: 900; animation: up 0.7s forwards; pointer-events: none; }
+        @keyframes up { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-120px); } }
     </style>
 </head>
 <body>
 
-    <div id="selection-screen">
-        <h2>ВЫБЕРИ МОНЕТУ</h2>
+    <div id="select-screen">
+        <h2 style="letter-spacing: 2px;">ВЫБЕРИ ОДНУ МОНЕТУ</h2>
         <div class="grid">
-            <div class="opt" onclick="confirmSelection('1.png')"><img src="images/1.png"></div>
-            <div class="opt" onclick="confirmSelection('2.png')"><img src="images/2.png"></div>
-            <div class="opt" onclick="confirmSelection('3.png')"><img src="images/3.png"></div>
-            <div class="opt" onclick="confirmSelection('4.png')"><img src="images/4.png"></div>
-            <div class="opt" onclick="confirmSelection('5.png')"><img src="images/5.png"></div>
-            <div class="opt" onclick="confirmSelection('6.png')"><img src="images/6.png"></div>
+<div class="opt" onclick="pick('1.png')"><img src="images/1.png"></div>
+            <div class="opt" onclick="pick('2.png')"><img src="images/2.png"></div>
+            <div class="opt" onclick="pick('3.png')"><img src="images/3.png"></div>
+            <div class="opt" onclick="pick('4.png')"><img src="images/4.png"></div>
+            <div class="opt" onclick="pick('5.png')"><img src="images/5.png"></div>
+            <div class="opt" onclick="pick('6.png')"><img src="images/6.png"></div>
         </div>
     </div>
 
     <div id="game-screen">
-        <div class="balance" id="bal">0</div>
-        <div class="coin-wrap"><div id="main-coin" onclick="tap(event)"></div></div>
-        <div class="shop-btn" onclick="openShop(true)">МАГАЗИН</div>
+        <div class="stats">
+            <div id="balance">0</div>
+            <div class="ips-text">⚡ +<span id="ips">0</span>/сек</div>
+        </div>
+
+        <div class="coin-box">
+            <div id="coin" onclick="tap(event)"></div>
+        </div>
+
+        <div class="energy-wrap">
+            <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span>ЭНЕРГИЯ</span>
+                <span id="en-txt">1000/1000</span>
+            </div>
+            <div class="bar"><div id="fill"></div></div>
+        </div>
+
+        <div class="shop-btn" onclick="sh(true)">МАГАЗИН КАРТОЧЕК</div>
     </div>
 
-    <div id="shop-modal" id="shop">
-        <div style="display:flex; justify-content: space-between">
-            <h3>МАГАЗИН</h3>
-            <h3 onclick="openShop(false)">×</h3>
+    <div id="shop-ui">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0">МАГАЗИН</h2>
+            <div style="font-size:30px;" onclick="sh(false)">×</div>
         </div>
-        <div id="itemList"></div>
+        <div id="shop-list" style="overflow-y:auto; height:80%;"></div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        let s = { bal: 0, ipc: 1, ips: 0, coin: null };
+        tg.expand();
 
-        function confirmSelection(img) {
-            s.coin = img;
-            start();
+        let d = { 
+            b: 0, c: 1, s: 0, e: 1000, m: 1000, img: null,
+            items: [
+                { id: 1, n: "Кепка", st: "🧢", p: 1, cost: 50, type: 'c', lvl: 0 },
+                { id: 2, n: "Робот", st: "🤖", p: 2, cost: 200, type: 's', lvl: 0 },
+                { id: 3, n: "Ферма", st: "🏠", p: 10, cost: 1000, type: 's', lvl: 0 },
+                { id: 4, n: "Ракета", st: "🚀", p: 50, cost: 5000, type: 's', lvl: 0 }
+            ]
+        };
+
+        function save() { localStorage.setItem('sh_data', JSON.stringify(d)); }
+
+        function pick(img) {
+            d.img = img;
+            save();
+            init();
         }
 
-        function start() {
-            document.getElementById('selection-screen').style.display = 'none';
-            document.getElementById('game-screen').
-style.display = 'flex';
-            document.getElementById('main-coin').innerHTML = <img src="images/${s.coin}">;
-            update();
-            setInterval(() => { if(s.ips > 0) { s.bal += s.ips/10; update(); } }, 100);
+        function init() {
+            document.getElementById('select-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            document.getElementById('coin').innerHTML = <img src="images/${d.img}">;
+            renderShop();
+            loop();
         }
 
         function tap(e) {
-            s.bal += s.ipc;
+            if(d.e < d.c) return;
+            d.b += d.c;
+            d.e -= d.c;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            const p = document.createElement('div');
+            p.className = 'plus';
+            p.innerText = +${d.c};
+            p.style.left = e.clientX + 'px';
+            p.style.top = e.clientY + 'px';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 700);
             update();
         }
 
-        function openShop(show) {
-            document.getElementById('shop-modal').classList.toggle('active', show);
+        function buy(id) {
+            const i = d.items.find(x => x.id === id);
+            if(d.b >= i.cost) {
+                d.b -= i.cost;
+                i.lvl++;
+                if(i.type === 'c') d.c += i.p; else d.s += i.p;
+                i.cost = Math.floor(i.cost * 1.5);
+                save();
+                renderShop();
+                update();
+            }
+        }
+
+        function sh(o) { document.getElementById('shop-ui').classList.toggle('open', o); }
+
+        function renderShop() {
+            const l = document.getElementById('shop-list');
+            l.innerHTML = '';
+            d.items.forEach(i => {
+                l.innerHTML += `<div class="card">
+                    <div class="card-left"><span class="sticker">${i.st}</span>
+                    <div><b>${i.n} [${i.lvl}]</b><br><small>+${i.p}${i.type=='c'?' к клику':'/сек'}</small></div></div>
+                    <button class="buy-btn" onclick="buy(${i.id})" ${d.b < i.
+cost ? 'disabled' : ''}>${i.cost}</button>
+                </div>`;
+            });
         }
 
         function update() {
-            document.getElementById('bal').innerText = Math.floor(s.bal).toLocaleString();
+            document.getElementById('balance').innerText = Math.floor(d.b).toLocaleString();
+            document.getElementById('ips').innerText = d.s;
+            document.getElementById('en-txt').innerText = ${Math.floor(d.e)}/${d.m};
+            document.getElementById('fill').style.width = (d.e/d.m*100)+'%';
         }
+
+        function loop() {
+            setInterval(() => {
+                if(d.s > 0) d.b += d.s/10;
+                if(d.e < d.m) d.e = Math.min(d.m, d.e + 1);
+                update();
+            }, 100);
+            setInterval(save, 3000);
+        }
+
+        const saved = localStorage.getItem('sh_data');
+        if(saved) { d = JSON.parse(saved); if(d.img) init(); }
     </script>
 </body>
 </html>
