@@ -1,35 +1,376 @@
-h.innerHTML += `
-                    <div class="item">
-                        <img src="images/${it.img}" onerror="this.src='https://via.placeholder.com/50/00f2ff/000000?text=IMG'">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHLUHIKOIN - Pro Edition</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --accent: #00f2ff;
+            --bg: #0a0b10;
+            --card: #1c1e29;
+            --energy: #ffcc00;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #1a1c2c 0%, #0a0b10 100%);
+            color: white;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ЭКРАН ВЫБОРА */
+        #selection-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .opt {
+            width: 130px;
+            height: 130px;
+            background: var(--card);
+            border: 2px solid #333;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .opt img { width: 70%; height: 70%; object-fit: contain; }
+        .opt:active { transform: scale(0.9); border-color: var(--accent); }
+
+        /* ИГРОВОЙ ЭКРАН */
+        #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; height: 100%; }
+
+        /* СЧЕТЧИК */
+        .header {
+            margin-top: 40px;
+            text-align: center;
+            transition: transform 0.05s;
+        }
+        .balance {
+            font-size: 52px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+        .ips { color: var(--accent); font-size: 14px; margin-top: 5px; font-weight: bold; }
+
+        /* МОНЕТА (ДИЗАЙН) */
+        .coin-wrap {
+            position: relative;
+            margin: 50px 0;
+            width: 270px;
+            height: 270px;
+        }
+        #main-coin {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffd700, #b8860b);
+            border: 8px solid #fff3bf;
+            box-shadow: 0 12px 0 #856b00, 0 20px 40px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.05s;
+        }
+        #main-coin:active { transform: translateY(8px); box-shadow: 0 4px 0 #856b00; }
+        #main-coin img { width: 75%; height: 75%; object-fit: contain; pointer-events: none; }
+
+        /* ЭНЕРГИЯ */
+        .energy-box {
+            width: 80%;
+            margin-top: 10px;
+        }
+        .energy-bar {
+            height: 8px;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        #energy-fill {
+            height: 100%;
+            background: var(--energy);
+            width: 100%;
+            transition: width 0.2s;
+        }
+
+        /* МАГАЗИН (КНОПКА) */
+        .open-shop-btn {
+            position: fixed;
+            bottom: 30px;
+            width: 85%;
+            height: 65px;
+            background: linear-gradient(90deg, #00f2ff, #0077ff);
+            color: #000;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+box-shadow: 0 10px 20px rgba(0, 119, 255, 0.4);
+        }
+
+        /* МАГАЗИН (ОКНО) */
+        #shop-modal {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            height: 75%;
+            background: #11131a;
+            border-top: 3px solid var(--accent);
+            border-radius: 35px 35px 0 0;
+            z-index: 2000;
+            transition: bottom 0.4s cubic-bezier(0, 0.5, 0.5, 1);
+            padding: 25px;
+            box-sizing: border-box;
+        }
+        #shop-modal.active { bottom: 0; }
+
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .shop-list { overflow-y: auto; height: 85%; padding-bottom: 50px; }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #222;
+        }
+        .item-card .icon { font-size: 35px; margin-right: 15px; }
+        .item-info { flex: 1; }
+        .item-info b { font-size: 16px; display: block; }
+        .item-info span { font-size: 12px; color: #888; }
+        .buy-btn {
+            background: white;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .buy-btn:disabled { background: #333; color: #666; }
+
+        /* ТЕКСТ КЛИКА */
+        .floating {
+            position: absolute;
+            color: white;
+            font-weight: 900;
+            font-size: 35px;
+            pointer-events: none;
+            animation: floatUp 0.7s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-120px) scale(1.4); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="selection-screen">
+        <h1 style="text-transform: uppercase; letter-spacing: 2px;">Выбери свою монету</h1>
+        <div class="grid">
+            <div class="opt" onclick="confirmSelection('1.png')"><img src="images/1.png"></div>
+            <div class="opt" onclick="confirmSelection('2.png')"><img src="images/2.png"></div>
+            <div class="opt" onclick="confirmSelection('3.png')"><img src="images/3.png"></div>
+            <div class="opt" onclick="confirmSelection('4.png')"><img src="images/4.png"></div>
+            <div class="opt" onclick="confirmSelection('5.png')"><img src="images/5.png"></div>
+            <div class="opt" onclick="confirmSelection('6.png')"><img src="images/6.png"></div>
+        </div>
+    </div>
+
+    <div id="game-screen">
+        <div class="header" id="header">
+            <div class="balance" id="balText">0</div>
+            <div class="ips">⚡ +<span id="ipsVal">0</span> / СЕКУНДА</div>
+        </div>
+
+        <div class="coin-wrap">
+            <div id="main-coin" onclick="handleTap(event)"></div>
+        </div>
+
+        <div class="energy-box">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+                <span>ЭНЕРГИЯ</span>
+                <span id="energyText">1000 / 1000</span>
+            </div>
+            <div class="energy-bar"><div id="energy-fill"></div></div>
+        </div>
+
+        <div class="open-shop-btn" onclick="toggleShop(true)">МАГАЗИН КАРТОЧЕК</div>
+    </div>
+
+    <div id="shop-modal">
+        <div class="shop-header">
+            <h2 style="margin:0">Магазин</h2>
+            <div onclick="toggleShop(false)" style="font-size:30px; cursor:pointer">×</div>
+        </div>
+        <div class="shop-list" id="shopItems"></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let state = {
+            bal: 0, ipc: 1, ips: 0, coin: null, energy: 1000, maxEnergy: 1000,
+            upgrades: [
+{ id: 1, icon: '👟', name: 'Кроссовки', cost: 40, power: 1, type: 'click', lvl: 0 },
+                { id: 2, icon: '🤖', name: 'Авто-бот', cost: 150, power: 2, type: 'auto', lvl: 0 },
+                { id: 3, icon: '⚡', name: 'Батарейка', cost: 500, power: 5, type: 'click', lvl: 0 },
+                { id: 4, icon: '🏠', name: 'Ферма', cost: 1500, power: 15, type: 'auto', lvl: 0 },
+                { id: 5, icon: '🚀', name: 'Ракета', cost: 10000, power: 150, type: 'auto', lvl: 0 }
+            ]
+        };
+
+        function save() { localStorage.setItem('shluhi_pro_save', JSON.stringify(state)); }
+
+        function confirmSelection(img) {
+            state.coin = img;
+            save();
+            start();
+        }
+
+        function start() {
+            document.getElementById('selection-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            document.getElementById('main-coin').innerHTML = <img src="images/${state.coin}">;
+            
+            updateUI();
+            
+            // Авто-доход (каждые 100мс для плавности)
+            setInterval(() => {
+                if(state.ips > 0) {
+                    state.bal += state.ips / 10;
+                    updateUI();
+                }
+                // Реген энергии
+                if(state.energy < state.maxEnergy) {
+                    state.energy = Math.min(state.maxEnergy, state.energy + 1);
+                    updateEnergyUI();
+                }
+            }, 100);
+            
+            setInterval(save, 3000);
+            renderShop();
+        }
+
+        function handleTap(e) {
+            if(state.energy < state.ipc) return; // Нет энергии
+
+            state.bal += state.ipc;
+            state.energy -= state.ipc;
+
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            // Анимация счетчика
+            const head = document.getElementById('header');
+            head.style.transform = 'scale(1.1)';
+            setTimeout(() => head.style.transform = 'scale(1)', 50);
+
+            // Текст +1
+            const t = document.createElement('div');
+            t.className = 'floating';
+            t.innerText = +${state.ipc};
+            t.style.left = e.clientX + 'px';
+            t.style.top = e.clientY + 'px';
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 700);
+
+            updateUI();
+            updateEnergyUI();
+        }
+
+        function toggleShop(open) {
+            document.getElementById('shop-modal').classList.toggle('active', open);
+            if(open) renderShop();
+        }
+
+        function buy(id) {
+            const up = state.upgrades.find(u => u.id === id);
+            if(state.bal >= up.cost) {
+                state.bal -= up.cost;
+                up.lvl++;
+                if(up.type === 'click') state.ipc += up.power;
+                else state.ips += up.power;
+                
+                up.cost = Math.floor(up.cost * 1.6);
+                
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                renderShop();
+                updateUI();
+                save();
+            }
+        }
+
+        function renderShop() {
+            const list = document.getElementById('shopItems');
+            list.innerHTML = '';
+            state.upgrades.forEach(up => {
+                const canBuy = state.bal >= up.cost;
+                list.innerHTML += `
+                    <div class="item-card">
+                        <div class="icon">${up.icon}</div>
                         <div class="item-info">
-                            <b>${it.name} [${it.lvl}]</b>
-                            <small>+${it.power} ${it.type=='click'?'клик':'/сек'}</small>
+                            <b>${up.name} [Lvl ${up.lvl}]</b>
+                            <span>+${up.power} ${up.type=='click'?'к клику':'/сек'}</span>
                         </div>
-                        <button class="buy-btn" onclick="buy(${it.id})" ${data.bal < it.cost ? 'disabled' : ''}>
-                            ${it.cost}
+                        <button class="buy-btn" onclick="buy(${up.id})" ${canBuy ? '' : 'disabled'}>
+                            💰 ${up.cost.toLocaleString()}
                         </button>
                     </div>
                 `;
             });
         }
-
-        function updateUI() {
-            document.getElementById('bal').innerText = Math.floor(data.bal).toLocaleString();
-            document.getElementById('v-ipc').innerText = data.ipc;
-            document.getElementById('v-ips').innerText = data.ips;
+function updateUI() {
+            document.getElementById('balText').innerText = Math.floor(state.bal).toLocaleString();
+            document.getElementById('ipsVal').innerText = state.ips;
         }
 
-        function loop() {
-            setInterval(() => {
-                if(data.ips > 0) {
-                    data.bal += data.ips / 10;
-                    updateUI();
-                }
-            }, 100);
-            setInterval(save, 3000);
+        function updateEnergyUI() {
+            const fill = document.getElementById('energy-fill');
+            const txt = document.getElementById('energyText');
+            const proc = (state.energy / state.maxEnergy) * 100;
+            fill.style.width = proc + '%';
+            txt.innerText = ${Math.floor(state.energy)} / ${state.maxEnergy};
         }
 
-        load();
+        // Авто-лоад
+        const saved = localStorage.getItem('shluhi_pro_save');
+        if(saved) {
+            state = JSON.parse(saved);
+            if(state.coin) start();
+        }
     </script>
 </body>
 </html>
